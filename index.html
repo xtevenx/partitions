@@ -10,11 +10,91 @@
 </head>
 
 <body>
-    lorem ipsum whatever the rest is.
+    <label for="algorithm">Partition generation algorithm:</label>
+    <select name="algorithm" id="algorithm"></select>
+
+    <div id="buttons"></div>
+
+    <div>
+        <canvas id="chart"></canvas>
+    </div>
 </body>
 
 <footer>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="assets/js/partitions.js"></script>
+    <script>
+        const BUTTONS = [1, 10, 1000, 1000000];
+
+        // Generate algorithms dropdown.
+        let algorithm = document.getElementById('algorithm');
+        for (let [k, v] of Object.entries(ALGORITHMS)) {
+            opt = document.createElement('option');
+            opt.value = opt.textContent = k;
+            algorithm.appendChild(opt);
+        }
+
+        // Generate buttons.
+        let buttons = document.getElementById('buttons');
+        for (let x of BUTTONS) {
+            but = document.createElement('button');
+            but.addEventListener('click', () => makeAdd(x));
+            but.textContent = 'Generate ' + x;
+            buttons.appendChild(but);
+        }
+
+        // Generate chart.
+        const NUMBER = 12;
+        let labels = partitions(NUMBER);
+        let data = Array(labels.length).fill(0);
+
+        const ctx = document.getElementById('chart');
+
+        let chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '# occurences',
+                        data: data,
+                    },
+                ],
+            },
+            options: {
+                animation: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                    },
+                },
+            },
+        });
+
+        function indexOf(a, x) {
+            for (let i = 0; i < a.length; ++i)
+                if (JSON.stringify(a[i]) === JSON.stringify(x)) return i;
+            alert('oops! there was a bug in the partition generation code. :(');
+        }
+
+        function addData(func, times, count, delay) {
+            let stop = Math.max(0, times - count);
+            while (--times >= stop) {
+                let p = func().sort((a, b) => b - a);
+                data[indexOf(labels, p)] += 1;
+            }
+
+            chart.update();
+
+            if (stop > 0) setTimeout(addData, delay, func, stop, count, delay);
+        }
+
+        function makeAdd(times) {
+            let a = ALGORITHMS[algorithm.value];
+            let c = Math.ceil(times / 1000);
+            addData(() => a(NUMBER), times, c, 1000 / (times / c));
+        }
+    </script>
 </footer>
 
 </html>

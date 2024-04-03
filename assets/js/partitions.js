@@ -3,7 +3,7 @@ function partitions(n) {
   if (!n) return [[]];
 
   let s = [];
-  for (p of partitions(n - 1)) {
+  for (let p of partitions(n - 1)) {
     let l = p.length;
     if (l == 1 || p[l - 2] > p[l - 1]) (s[s.length] = [...p])[l - 1]++;
     (s[s.length] = p)[l] = 1;
@@ -21,17 +21,17 @@ function partition_naive(n) {
 // Stars and bars partitions
 function _solve_stars(n, k) {
   let a = [...Array(k - 1).keys()];
-  for (i = k; i < n + k; ++i) {
+  for (let i = k; i < n + k; ++i) {
     let j = Math.floor(Math.random() * i);
     if (j < k - 1) a[j] = i - 1;
   }
 
   a.sort((x, y) => x - y).push(n + k - 1);
-  for (i = k - 1; i >= 1; --i) a[i] -= a[i - 1] + 1;
+  for (let i = k - 1; i >= 1; --i) a[i] -= a[i - 1] + 1;
   return a;
 
   // let a = [...Array(n + k - 1).keys()];
-  // for (i = 1; i < k; ++i) {
+  // for (let i = 1; i < k; ++i) {
   //   let j = Math.floor(Math.random() * (n + k - i));
   //   let t = a[a.length - i];
   //   a[a.length - i] = a[j];
@@ -40,7 +40,7 @@ function _solve_stars(n, k) {
   //
   // a = a.slice(-k + 1);
   // a.sort((x, y) => x - y).push(n + k - 1);
-  // for (i = k - 1; i >= 1; --i) a[i] -= a[i - 1] + 1;
+  // for (let i = k - 1; i >= 1; --i) a[i] -= a[i - 1] + 1;
   // return a;
 }
 
@@ -54,14 +54,14 @@ function _get_bars(n) {
   let a = [...Array(n)].map((_) => Array(n));
 
   a[0].fill(0)[0] = 1;
-  for (i = 1; i < n; ++i) {
+  for (let i = 1; i < n; ++i) {
     a[i].fill(0)[0] = 1;
-    for (j = 1; j <= i; ++j)
+    for (let j = 1; j <= i; ++j)
       a[i][j] = a[i - 1][j - 1] + (i - j - 1 >= 0 ? a[i - j - 1][j] : 0);
   }
 
   let r = Math.floor(Math.random() * a[n - 1].reduce((s, x) => s + x, 0));
-  for (j = 0; ; ++j) if ((r -= a[n - 1][j]) < 0) return j + 1;
+  for (let j = 0; ; ++j) if ((r -= a[n - 1][j]) < 0) return j + 1;
 }
 
 function partition_bars(n) {
@@ -105,6 +105,7 @@ function partition_frist(n) {
 
 // Nijenhuis-Wilf partitions [https://doi.org/10.1016/0097-3165(75)90013-8]
 function sigma(n) {
+  if (n == 0) return 1; // NOTE undocumented in the paper
   let x = Math.floor(Math.sqrt(n));
   return (
     [...Array(x).keys()]
@@ -116,14 +117,28 @@ function sigma(n) {
 
 function _get_random(a) {
   let r = Math.random() * a.reduce((s, x) => s + x, 0);
-  for (i = 0; ; ++i) if ((r -= a[i]) <= 0) return i; // should be < instead of <= but buggy
+  for (let i = 0; ; ++i) if ((r -= a[i]) <= 0) return i; // should be < instead of <= but buggy
 }
 
 function partition_nwilf(n) {
+  // Copied from _get_bars(n) to calculate p(n).
+  let a = [...Array(n)].map((_) => Array(n));
+
+  a[0].fill(0)[0] = 1;
+  for (let i = 1; i < n; ++i) {
+    a[i].fill(0)[0] = 1;
+    for (let j = 1; j <= i; ++j)
+      a[i][j] = a[i - 1][j - 1] + (i - j - 1 >= 0 ? a[i - j - 1][j] : 0);
+  }
+
+  a = a.map((r) => r.reduce((s, x) => s + x, 0));
+  a.unshift(1);
+
+  // Remainder of the algorithm.
   let p = [];
   while (n) {
     let m = _get_random(
-      [...Array(n).keys()].map((m) => (sigma(n - m) * sigma(m)) / n / sigma(n)),
+      [...Array(n).keys()].map((m) => (sigma(n - m) * a[m]) / n / a[n]),
     );
 
     let x = sigma(n - m);
@@ -142,25 +157,23 @@ function partition_nwilf(n) {
   return p;
 }
 
+let ALGORITHMS = {
+  Naive: partition_naive,
+  'Bins & Balls': partition_stars,
+  'Bins & Balls [Adjusted]': partition_bars,
+  Fristedt: partition_frist,
+  'Nijenhuis-Wilf': partition_nwilf,
+};
+
 // Testing
-let n = 2000;
-
-// s = performance.now();
-// console.log('naive:', partition_naive(n));
-// console.log('time:', performance.now() - s);
-
-s = performance.now();
-console.log('stars:', partition_stars(n));
-console.log('time:', performance.now() - s);
-
-s = performance.now();
-console.log('bars:', partition_bars(n));
-console.log('time:', performance.now() - s);
-
-s = performance.now();
-console.log('frist:', partition_frist(n));
-console.log('time:', performance.now() - s);
-
-s = performance.now();
-console.log('nwilf:', partition_nwilf(n));
-console.log('time:', performance.now() - s);
+for (let [k, v] of Object.entries(ALGORITHMS)) {
+  let s = performance.now();
+  console.log(
+    k,
+    'returned',
+    v(7),
+    'in',
+    performance.now() - s,
+    'milliseconds.',
+  );
+}
