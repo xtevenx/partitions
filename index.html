@@ -77,8 +77,32 @@
             alert('oops! there was a bug in the partition generation code. :(');
         }
 
+        let wantStop = false;
+        let hasStop = true;
+
+        let startTime, delayTime, doneTimes;
+
+        function startData(func, times, count, delay) {
+            wantStop = true;
+            if (!hasStop)
+                return setTimeout(startData, 100, func, times, count, delay);
+
+            wantStop = false;
+            hasStop = false;
+
+            startTime = performance.now();
+            delayTime = -delay;
+            doneTimes = 0;
+
+            setTimeout(addData, 0, func, times, count, delay);
+        }
+
         function addData(func, times, count, delay) {
             let stop = Math.max(0, times - count);
+
+            delayTime += delay;
+            doneTimes += times - stop;
+
             while (--times >= stop) {
                 let p = func().sort((a, b) => b - a);
                 data[indexOf(labels, p)] += 1;
@@ -86,13 +110,23 @@
 
             chart.update();
 
-            if (stop > 0) setTimeout(addData, delay, func, stop, count, delay);
+            console.log(
+                'done',
+                doneTimes,
+                'times in',
+                performance.now() - startTime - delayTime,
+                'milliseconds',
+            );
+
+            if (stop > 0 && !wantStop)
+                setTimeout(addData, delay, func, stop, count, delay);
+            else hasStop = true;
         }
 
         function makeAdd(times) {
             let a = ALGORITHMS[algorithm.value];
             let c = Math.ceil(times / 1000);
-            addData(() => a(NUMBER), times, c, 1000 / (times / c));
+            startData(() => a(NUMBER), times, c, 1000 / (times / c));
         }
     </script>
 </footer>
