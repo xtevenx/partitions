@@ -15,6 +15,9 @@
 
     <div id="buttons"></div>
 
+    <div id="parti"></div>
+    <div id="speed"></div>
+
     <div>
         <canvas id="chart"></canvas>
     </div>
@@ -80,7 +83,7 @@
         let wantStop = false;
         let hasStop = true;
 
-        let startTime, delayTime, doneTimes;
+        let timeTaken, doneTimes;
 
         function startData(func, times, count, delay) {
             wantStop = true;
@@ -90,33 +93,35 @@
             wantStop = false;
             hasStop = false;
 
-            startTime = performance.now();
-            delayTime = -delay;
+            timeTaken = 0;
             doneTimes = 0;
 
             setTimeout(addData, 0, func, times, count, delay);
         }
 
+        let partiText = document.getElementById('parti');
+        let speedText = document.getElementById('speed');
+
         function addData(func, times, count, delay) {
             let stop = Math.max(0, times - count);
 
-            delayTime += delay;
             doneTimes += times - stop;
+            let s = performance.now();
 
+            let p;
             while (--times >= stop) {
-                let p = func().sort((a, b) => b - a);
+                p = func().sort((a, b) => b - a);
                 data[indexOf(labels, p)] += 1;
             }
 
-            chart.update();
+            timeTaken += performance.now() - s;
 
-            console.log(
-                'done',
-                doneTimes,
-                'times in',
-                performance.now() - startTime - delayTime,
-                'milliseconds',
-            );
+            partiText.textContent = 'The last partition we got was ' + p + '.';
+            speedText.textContent =
+                'Calculated at ' +
+                Math.round((1000 * doneTimes) / timeTaken) +
+                ' partitions/second.';
+            chart.update();
 
             if (stop > 0 && !wantStop)
                 setTimeout(addData, delay, func, stop, count, delay);
