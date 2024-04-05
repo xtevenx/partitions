@@ -10,8 +10,11 @@
 </head>
 
 <body>
-    <label for="algorithm">Partition generation algorithm:</label>
+    <label for="algorithm">Use the</label>
     <select name="algorithm" id="algorithm"></select>
+
+    <label for="number">algorithm to generate partitions of</label>
+    <input type="text" id="number" name="number" value="5" />.
 
     <div id="buttons"></div>
 
@@ -47,8 +50,8 @@
         }
 
         // Generate chart.
-        const NUMBER = 12;
-        let labels = partitions(NUMBER);
+        let number = document.getElementById('number');
+        let labels = partitions(parseInt(number.value));
         let data = Array(labels.length).fill(0);
 
         const ctx = document.getElementById('chart');
@@ -74,11 +77,43 @@
             },
         });
 
-        function indexOf(a, x) {
-            for (let i = 0; i < a.length; ++i)
-                if (JSON.stringify(a[i]) === JSON.stringify(x)) return i;
-            alert('oops! there was a bug in the partition generation code. :(');
+        function updateChart() {
+            let n = parseInt(number.value);
+            if (n <= 0) return alert('Partitions only work on positive integers.');
+
+            labels = partitions(n);
+            data = Array(labels.length).fill(0);
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.update();
+            return n;
         }
+
+        function compareArray(a, b) {
+            let x = Math.max(a.length, b.length);
+            for (let i = 0; i < x; i++) if (a[i] != b[i]) return b[i] - a[i];
+            return 0;
+        }
+
+        function indexOf(a, x) {
+            let low = 0;
+            let hig = a.length - 1;
+            while (low <= hig) {
+                let mid = Math.floor((low + hig) / 2);
+                let res = compareArray(x, a[mid]);
+                if (res === 0) return mid;
+                else if (res < 0) hig = mid - 1;
+                else low = mid + 1;
+            }
+
+            alert('Oops! there was a bug in the partition generation code. :(');
+        }
+
+        // function indexOf(a, x) {
+        //     for (let i = 0; i < a.length; ++i)
+        //         if (JSON.stringify(a[i]) === JSON.stringify(x)) return i;
+        //     alert('Oops! there was a bug in the partition generation code. :(');
+        // }
 
         let wantStop = false;
         let hasStop = true;
@@ -96,7 +131,8 @@
             timeTaken = 0;
             doneTimes = 0;
 
-            setTimeout(addData, 0, func, times, count, delay);
+            let n = updateChart();
+            setTimeout(addData, 0, () => func(n), times, count, delay);
         }
 
         let partiText = document.getElementById('parti');
@@ -111,7 +147,7 @@
             let p;
             while (--times >= stop) {
                 p = func().sort((a, b) => b - a);
-                data[indexOf(labels, p)] += 1;
+                data[indexOf(labels, p)] += 1; // NOTE This is counted in the partition generation time.
             }
 
             timeTaken += performance.now() - s;
@@ -129,9 +165,8 @@
         }
 
         function makeAdd(times) {
-            let a = ALGORITHMS[algorithm.value];
             let c = Math.ceil(times / 1000);
-            startData(() => a(NUMBER), times, c, 1000 / (times / c));
+            startData(ALGORITHMS[algorithm.value], times, c, 1000 / (times / c));
         }
     </script>
 </footer>
