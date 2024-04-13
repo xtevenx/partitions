@@ -147,14 +147,21 @@
             let p;
             while (--times >= stop) {
                 p = func().sort((a, b) => b - a);
-                data[indexOf(labels, p)] += 1; // NOTE This is counted in the partition generation time.
+
+                // NOTE This is counted in the partition generation time but experimentally this
+                // doesn't make a difference...
+                data[indexOf(labels, p)] += 1;
             }
 
             timeTaken += performance.now() - s;
 
             partiText.textContent = 'The last partition we got was ' + p + '.';
             speedText.textContent =
-                'Calculated at ' +
+                'Calculated ' +
+                doneTimes +
+                ' partitions in ' +
+                timeTaken +
+                ' milliseconds for ' +
                 Math.round((1000 * doneTimes) / timeTaken) +
                 ' partitions/second.';
             chart.update();
